@@ -1,0 +1,31 @@
+# Dependencias
+/node_modules   
+
+#builds
+/dist
+/build
+
+#ambiences 
+.env
+.env.*
+
+#logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+#sistemas
+.DS_Store
+Thumbs.db
+
+#IDEs
+.vscode/
+.idea/
+
+#testes 
+/coberturas
+coverage/
+
+#arquivos temporários
+*.tmp
+*.log
