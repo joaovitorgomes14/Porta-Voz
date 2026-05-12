@@ -4,24 +4,11 @@ const validarEndereco = require('../validations/validarEndereco');
 const state = {
   INICIO: 'INICIO',
   DESCRICAO: 'DESCRICAO',
-  ENDERECO: 'ENDERECO', // corrigido (sem acento)
+  RUA: 'RUA',
+  NUMERO: 'NUMERO',
+  BAIRRO: 'BAIRRO',
   CONFIRMACAO: 'CONFIRMACAO',
 };
-
-
-const transitions = {
-  [state.INICIO]: state.DESCRICAO,
-  [state.DESCRICAO]: state.ENDERECO,
-  [state.ENDERECO]: state.CONFIRMACAO,
-};
-
-
-function getNextState(currentState) {
-  // ❗ Correção: removi variável desnecessária
-  // antes você criava "nextState" e não usava
-  return transitions[currentState] || state.INICIO;
-}
-
 
 function isValidState(currentState) {
   const validStates = Object.values(state);
@@ -29,9 +16,28 @@ function isValidState(currentState) {
 }
 
 
-async function handle({ userId, state: currentState, message }) {
+async function handle({ user, state: currentState, message }) {
+
+  if (!user) {
+    user = {};
+  }
+
+  if (!currentState) {
+    currentState = state.INICIO;
+  }
+
+  if (!user.endereco) {
+    user.endereco = {};
+  }
+
+  if (!isValidState(currentState)) {
+  currentState = state.INICIO;
+}
+
   let response = "";
   let nextState = currentState;
+
+  
 
   switch (currentState) {
 
@@ -41,50 +47,117 @@ async function handle({ userId, state: currentState, message }) {
       break;
 
     case state.DESCRICAO:
-      if (!message) {
+      if (!message || !message.trim()) {
         response = "Descreva o problema, por favor.";
         break;
       }
+      user.descricao = message.trim();
 
-      response = "Informe o endereço do problema.";
-      nextState = state.ENDERECO;
+      response = "Informe a rua do problema.";
+      nextState = state.RUA;
       break;
 
-    case state.ENDERECO:
-        if (!message) {
-    response = "Informe um endereço válido.";
-    break;
-  }
+    case state.RUA:
+      if (!message || !message.trim()) {
+        response = "Informe a rua do problema.";
+        break;
+      }
+      user.endereco.rua = message.trim();
+      nextState = state.NUMERO;
 
-  const resultadoValidacao = validarEndereco(message);
+      response = "Informe o número do problema.";
+      break;
 
-if (!resultadoValidacao.valido) {
+    case state.NUMERO:
+      if (!message || !message.trim()) {
+        response = "Informe o número do problema.";
+        break;
+      }
 
-    response = resultadoValidacao.erros.join(", ");
+      const numero = message.trim();
 
-    nextState = state.ENDERECO;
+      if (Number.isNaN(Number(numero))) {
+        response = "Digite apenas números.";
+        break;
+      }
 
-    break;
-}
 
-  response = "Deseja confirmar a solicitação? (sim/não)";
-  nextState = state.CONFIRMACAO;
+      user.endereco.numero = Number(numero);
 
-  break;
+      nextState = state.BAIRRO;
+
+      response = "Informe o bairro do problema.";
+
+      break;
+
+    case state.BAIRRO:
+      if (!message || !message.trim()) {
+        response = "Informe o bairro do problema.";
+        break;
+      }
+      user.endereco.bairro = message.trim();
+
+      let resultadoValidacao;
+
+      try {
+
+        resultadoValidacao = validarEndereco(user.endereco);
+
+      } catch (error) {
+
+        response = "Erro ao validar endereço.";
+        break;
+      }
+
+      if (!resultadoValidacao.valido) {
+
+        response = resultadoValidacao.erros.join(", ");
+
+        break;
+      }
+
+      nextState = state.CONFIRMACAO;
+
+    response = `
+    Problema: ${user.descricao}
+
+    Rua: ${user.endereco.rua}
+    Número: ${user.endereco.numero}
+    Bairro: ${user.endereco.bairro}
+
+    Deseja confirmar? (sim/não)
+    `;
+
+      break;
 
     case state.CONFIRMACAO:
 
-      if (!message) {
+      if (!message || !message.trim()) {
         response = "Responda com 'sim' ou 'não'.";
         break;
       }
 
-      const resposta = message.toLowerCase();
+      const resposta = message.trim().toLowerCase();
+
+      if (
+        resposta !== "sim" &&
+        resposta !== "não" &&
+        resposta !== "nao"
+      ) {
+        response = "Responda apenas com 'sim' ou 'não'.";
+        break;
+      }
 
       if (resposta === "sim") {
+        user = {};
+
         response = "Solicitação registrada com sucesso!";
-        nextState = state.INICIO; // reinicia fluxo
+        nextState = state.INICIO;
+
       } else {
+
+        user.descricao = "";
+        user.endereco = {};
         response = "Solicitação cancelada.";
         nextState = state.INICIO;
       }
@@ -103,7 +176,6 @@ if (!resultadoValidacao.valido) {
 
 module.exports = {
   state,
-  getNextState,
   isValidState,
   handle
 };

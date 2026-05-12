@@ -1,23 +1,38 @@
 function validarEndereco(endereco) {
 
-    if (!endereco) {
-        return {
-            valido: false,
-            erros: ['Endereço é obrigatório']
-        };
-    }
+  const erros = [];
 
-    if (endereco.trim().length < 10) {
-        return {
-            valido: false,
-            erros: ['Digite um endereço mais completo']
-        };
-    }
+  if (
+    endereco.rua !== undefined &&
+    (
+      typeof endereco.rua !== "string" ||
+      !endereco.rua.trim()
+    )
+  ) {
+    erros.push("Rua inválida.");
+  }
 
-    return {
-        valido: true,
-        erros: []
-    };
+  if (
+    endereco.numero !== undefined &&
+    Number.isNaN(Number(endereco.numero))
+  ) {
+    erros.push("Número inválido.");
+  }
+
+  if (
+    endereco.bairro !== undefined &&
+    (
+      typeof endereco.bairro !== "string" ||
+      !endereco.bairro.trim()
+    )
+  ) {
+    erros.push("Bairro inválido.");
+  }
+
+  return {
+    valido: erros.length === 0,
+    erros
+  };
 }
 
 module.exports = validarEndereco;
