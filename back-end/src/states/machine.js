@@ -42,7 +42,7 @@ async function handle({ user, state: currentState, message }) {
   switch (currentState) {
 
     case state.INICIO:
-      response = "Olá! Qual é o problema?";
+      response = "Olá! Este canal foi criado para facilitar o envio de reclamações e solicitações à prefeitura. Qual problema você deseja relatar?";
       nextState = state.DESCRICAO;
       break;
 
