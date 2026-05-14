@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+changelogFront.md
+CHANGELOG.md
+CHANGELOG-*.md 
