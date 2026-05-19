@@ -1,6 +1,8 @@
+import Home from '../pages/home'
+
 function AppRoutes() {
   return (
-    <h1>Funcionando</h1>
+    <Home/>
   )
 }
 
