@@ -36,7 +36,7 @@ function ForgotPassword() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Digite seu email"
             autoComplete="email"
-            className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+            className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
           />
         </div>
 
