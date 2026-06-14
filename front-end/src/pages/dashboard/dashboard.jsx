@@ -9,6 +9,7 @@ import Sidebar from "../../components/Sidebar/Sidebar";
 
 export default function Dashboard() {
   const [search, setSearch] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [complaints, setComplaints] = useState([
     {
@@ -71,51 +72,54 @@ export default function Dashboard() {
     item.categoria.toLowerCase().includes(search.toLowerCase())
   );
 
- return (
-  <div className="flex min-h-screen">
-    
-    <Sidebar />
+  return (
+    <div className="min-h-screen">
 
-    <div className="flex-1 bg-slate-100">
-      <Header />
+      <Sidebar open={menuOpen} />
 
-      <main className="p-6 space-y-6">
+      <div className="bg-slate-100 min-h-screen">
 
-        <DashboardCards
-          total={complaints.length}
-          pendentes={
-            complaints.filter(
-              (c) => c.status === "Pendente"
-            ).length
-          }
-          andamento={
-            complaints.filter(
-              (c) => c.status === "Em andamento"
-            ).length
-          }
-          resolvidas={
-            complaints.filter(
-              (c) => c.status === "Resolvido"
-            ).length
-          }
+        <Header
+          onMenuClick={() => setMenuOpen(!menuOpen)}
         />
 
-        <FilterBar
-          search={search}
-          setSearch={setSearch}
-        />
+        <main className="p-6 space-y-6">
 
-        <ComplaintTable
-          complaints={filteredComplaints}
-          onStatusChange={handleStatusChange}
-          onPriorityChange={handlePriorityChange}
-          onSectorChange={handleSectorChange}
-        />
+          <DashboardCards
+            total={complaints.length}
+            pendentes={
+              complaints.filter(
+                (c) => c.status === "Pendente"
+              ).length
+            }
+            andamento={
+              complaints.filter(
+                (c) => c.status === "Em andamento"
+              ).length
+            }
+            resolvidas={
+              complaints.filter(
+                (c) => c.status === "Resolvido"
+              ).length
+            }
+          />
 
-        <AdminManager />
+          <FilterBar
+            search={search}
+            setSearch={setSearch}
+          />
 
-      </main>
+          <ComplaintTable
+            complaints={filteredComplaints}
+            onStatusChange={handleStatusChange}
+            onPriorityChange={handlePriorityChange}
+            onSectorChange={handleSectorChange}
+          />
+
+          <AdminManager />
+
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
 }
