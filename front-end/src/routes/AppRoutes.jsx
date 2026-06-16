@@ -9,12 +9,15 @@ function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-
         <Route path="/" element={<Dashboard />} />
+        <Route path="/complaints" element={<Dashboard />} />
+        <Route path="/setores" element={<Dashboard />} />
+        <Route path="/admins" element={<Dashboard />} />
+        <Route path="/reports" element={<Dashboard />} />
+        <Route path="/settings" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
       </Routes>
     </BrowserRouter>
   )

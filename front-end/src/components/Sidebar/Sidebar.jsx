@@ -1,8 +1,8 @@
-export default function Sidebar({ open }) {
+export default function Sidebar({ open, activePage, onNavigate }) {
   const mainItems = [
     {
+      page: "dashboard",
       label: "Dashboard",
-      active: true,
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -11,6 +11,7 @@ export default function Sidebar({ open }) {
       ),
     },
     {
+      page: "complaints",
       label: "Reclamações",
       badge: 3,
       icon: (
@@ -20,6 +21,7 @@ export default function Sidebar({ open }) {
       ),
     },
     {
+      page: "setores",
       label: "Setores",
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -31,6 +33,7 @@ export default function Sidebar({ open }) {
 
   const managementItems = [
     {
+      page: "admins",
       label: "Administradores",
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -42,6 +45,7 @@ export default function Sidebar({ open }) {
       ),
     },
     {
+      page: "reports",
       label: "Relatórios",
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -52,6 +56,7 @@ export default function Sidebar({ open }) {
       ),
     },
     {
+      page: "settings",
       label: "Configurações",
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -97,55 +102,65 @@ export default function Sidebar({ open }) {
         <p style={{ fontSize: 10, color: "#5C7E9F", letterSpacing: "0.8px", textTransform: "uppercase", padding: "8px 10px 4px", fontWeight: 600 }}>
           Principal
         </p>
-        {mainItems.map((item) => (
-          <button
-            key={item.label}
-            style={{
-              display: "flex", alignItems: "center", gap: 10,
-              width: "100%", padding: "9px 12px",
-              borderRadius: 7, cursor: "pointer",
-              color: item.active ? "white" : "#8BA8C4",
-              fontSize: 13, fontWeight: 500,
-              background: item.active ? "#2E86DE" : "transparent",
-              border: "none", marginBottom: 2,
-              textAlign: "left",
-            }}
-          >
-            {item.icon}
-            {item.label}
-            {item.badge && (
-              <span
-                style={{
-                  marginLeft: "auto", background: "#E74C3C", color: "white",
-                  fontSize: 10, fontWeight: 700, padding: "1px 6px",
-                  borderRadius: 10, minWidth: 18, textAlign: "center",
-                }}
-              >
-                {item.badge}
-              </span>
-            )}
-          </button>
-        ))}
+        {mainItems.map((item) => {
+          const isActive = activePage === item.page;
+          return (
+            <button
+              key={item.label}
+              onClick={() => onNavigate?.(item.page)}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                width: "100%", padding: "9px 12px",
+                borderRadius: 7, cursor: "pointer",
+                color: isActive ? "white" : "#8BA8C4",
+                fontSize: 13, fontWeight: 500,
+                background: isActive ? "#2E86DE" : "transparent",
+                border: "none", marginBottom: 2,
+                textAlign: "left",
+              }}
+            >
+              {item.icon}
+              {item.label}
+              {item.badge && (
+                <span
+                  style={{
+                    marginLeft: "auto", background: "#E74C3C", color: "white",
+                    fontSize: 10, fontWeight: 700, padding: "1px 6px",
+                    borderRadius: 10, minWidth: 18, textAlign: "center",
+                  }}
+                >
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
 
         <p style={{ fontSize: 10, color: "#5C7E9F", letterSpacing: "0.8px", textTransform: "uppercase", padding: "16px 10px 4px", fontWeight: 600 }}>
           Gestão
         </p>
-        {managementItems.map((item) => (
-          <button
-            key={item.label}
-            style={{
-              display: "flex", alignItems: "center", gap: 10,
-              width: "100%", padding: "9px 12px",
-              borderRadius: 7, cursor: "pointer",
-              color: "#8BA8C4", fontSize: 13, fontWeight: 500,
-              background: "transparent", border: "none", marginBottom: 2,
-              textAlign: "left",
-            }}
-          >
-            {item.icon}
-            {item.label}
-          </button>
-        ))}
+        {managementItems.map((item) => {
+          const isActive = activePage === item.page;
+          return (
+            <button
+              key={item.label}
+              onClick={() => onNavigate?.(item.page)}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                width: "100%", padding: "9px 12px",
+                borderRadius: 7, cursor: "pointer",
+                color: isActive ? "white" : "#8BA8C4",
+                fontSize: 13, fontWeight: 500,
+                background: isActive ? "#2E86DE" : "transparent",
+                border: "none", marginBottom: 2,
+                textAlign: "left",
+              }}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Footer */}
