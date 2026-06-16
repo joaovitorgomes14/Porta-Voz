@@ -52,26 +52,26 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const pathToPage = {
-    "/": "dashboard",
-    "/complaints": "complaints",
-    "/setores": "setores",
-    "/admins": "admins",
-    "/reports": "reports",
-    "/settings": "settings",
+    "/dashboard": "dashboard",
+    "/dashboard/complaints": "complaints",
+    "/dashboard/setores": "setores",
+    "/dashboard/admins": "admins",
+    "/dashboard/reports": "reports",
+    "/dashboard/settings": "settings",
   };
 
   const pageToPath = {
-    dashboard: "/",
-    complaints: "/complaints",
-    setores: "/setores",
-    admins: "/admins",
-    reports: "/reports",
-    settings: "/settings",
+    dashboard: "/dashboard",
+    complaints: "/dashboard/complaints",
+    setores: "/dashboard/setores",
+    admins: "/dashboard/admins",
+    reports: "/dashboard/reports",
+    settings: "/dashboard/settings",
   };
 
   const activePage = pathToPage[location.pathname] || "dashboard";
   const handleNavigate = (page) => {
-    navigate(pageToPath[page] || "/");
+    navigate(pageToPath[page] || "/dashboard");
     setMenuOpen(false);
   };
 
