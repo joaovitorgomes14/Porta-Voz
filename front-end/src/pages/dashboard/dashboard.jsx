@@ -14,6 +14,33 @@ const INITIAL_COMPLAINTS = [
   { id: 3, categoria: "Coleta de lixo", bairro: "Centro",       status: "Em andamento", prioridade: "Urgente", setor: "Limpeza Urbana" },
 ];
 
+const INITIAL_NOTIFICATIONS = [
+  {
+    id: 1,
+    title: "Nova reclamação aberta",
+    message: "Buraco na via do bairro Centro precisa ser verificado.",
+    date: "2026-06-17T14:20:00",
+    lida: false,
+    type: "Alerta",
+  },
+  {
+    id: 2,
+    title: "Relatório semanal disponível",
+    message: "O relatório de desempenho foi gerado e está pronto para revisão.",
+    date: "2026-06-16T09:15:00",
+    lida: true,
+    type: "Informação",
+  },
+  {
+    id: 3,
+    title: "Atualização no setor de limpezas",
+    message: "A equipe de limpeza urbana atualizou o status de uma demanda urgente.",
+    date: "2026-06-15T18:05:00",
+    lida: false,
+    type: "Atualização",
+  },
+];
+
 const SECTION_CARD = {
   background: "white",
   border: "1px solid #E4E9F0",
@@ -43,11 +70,13 @@ const SETTINGS_OPTIONS = [
 ];
 
 export default function Dashboard() {
-  const [menuOpen, setMenuOpen]       = useState(false);
-  const [complaints, setComplaints]   = useState(INITIAL_COMPLAINTS);
-  const [search, setSearch]           = useState("");
+  const [menuOpen, setMenuOpen]         = useState(false);
+  const [complaints, setComplaints]     = useState(INITIAL_COMPLAINTS);
+  const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [setorFilter, setSetorFilter]   = useState("");
+  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -58,6 +87,7 @@ export default function Dashboard() {
     "/dashboard/admins": "admins",
     "/dashboard/reports": "reports",
     "/dashboard/settings": "settings",
+    "/dashboard/notifications": "notifications",
   };
 
   const pageToPath = {
@@ -67,6 +97,7 @@ export default function Dashboard() {
     admins: "/dashboard/admins",
     reports: "/dashboard/reports",
     settings: "/dashboard/settings",
+    notifications: "/dashboard/notifications",
   };
 
   const activePage = pathToPage[location.pathname] || "dashboard";
@@ -82,6 +113,7 @@ export default function Dashboard() {
     admins: "Administradores",
     reports: "Relatórios",
     settings: "Configurações",
+    notifications: "Notificações",
   };
 
   const PAGE_DESCRIPTIONS = {
@@ -91,6 +123,7 @@ export default function Dashboard() {
     admins: "Gerencie usuários com acesso ao painel administrativo.",
     reports: "Relatórios e métricas que ajudam a priorizar intervenções.",
     settings: "Opções do sistema e preferências de exibição.",
+    notifications: "Acompanhe alertas de serviço, atualizações e avisos recentes.",
   };
 
   const renderPageContent = () => {
@@ -174,6 +207,107 @@ export default function Dashboard() {
                 Gráfico de desempenho aqui
               </div>
             </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (activePage === "notifications") {
+      return (
+        <div style={SECTION_CARD}>
+          <div style={SECTION_HEADER}>
+            <div>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: "#1A3A5C" }}>Notificações</h2>
+              <p style={{ fontSize: 12, color: "#7A8FA6", marginTop: 2 }}>
+                Veja os avisos, alertas e atualizações mais recentes do painel.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <button
+                onClick={() => setShowUnreadOnly((v) => !v)}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #E4E9F0",
+                  background: showUnreadOnly ? "#2E86DE" : "white",
+                  color: showUnreadOnly ? "white" : "#445A72",
+                  cursor: "pointer",
+                }}
+              >
+                {showUnreadOnly ? "Ver todas" : "Somente não lidas"}
+              </button>
+              <button
+                onClick={() => setNotifications((prev) => prev.map((item) => ({ ...item, lida: true })))}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #E4E9F0",
+                  background: "#2E86DE",
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
+                Marcar todas como lidas
+              </button>
+            </div>
+          </div>
+
+          <div style={{ padding: 20, display: "grid", gap: 12 }}>
+            {notificationsToDisplay.length === 0 ? (
+              <div style={{ padding: 24, background: "#F9FBFD", borderRadius: 14, color: "#5A6B7D" }}>
+                {showUnreadOnly
+                  ? "Nenhuma notificação não lida no momento."
+                  : "Nenhuma notificação disponível."}
+              </div>
+            ) : (
+              notificationsToDisplay.map((notification) => (
+                <div
+                  key={notification.id}
+                  style={{
+                    background: notification.lida ? "#FFFFFF" : "#EEF6FF",
+                    border: "1px solid #E4E9F0",
+                    borderRadius: 16,
+                    padding: 20,
+                    display: "grid",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start" }}>
+                    <div>
+                      <strong style={{ display: "block", fontSize: 14, color: "#1A3A5C" }}>{notification.title}</strong>
+                      <span style={{ fontSize: 12, color: "#7A8FA6" }}>{notification.type}</span>
+                    </div>
+                    <span style={{ fontSize: 12, color: "#7A8FA6" }}>
+                      {new Date(notification.date).toLocaleString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, color: "#445A72", fontSize: 13 }}>{notification.message}</p>
+                  {!notification.lida && (
+                    <button
+                      onClick={() => setNotifications((prev) => prev.map((item) => item.id === notification.id ? { ...item, lida: true } : item))}
+                      style={{
+                        alignSelf: "flex-start",
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: "#2E86DE",
+                        color: "white",
+                        cursor: "pointer",
+                        fontSize: 12,
+                      }}
+                    >
+                      Marcar como lida
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       );
@@ -289,10 +423,15 @@ export default function Dashboard() {
     return matchSearch && matchStatus && matchSetor;
   });
 
+  const notificationsToDisplay = notifications.filter((notification) =>
+    !showUnreadOnly || !notification.lida
+  );
+
   // Summary counts
   const pendentes  = complaints.filter((c) => c.status === "Pendente").length;
   const andamento  = complaints.filter((c) => c.status === "Em andamento").length;
   const resolvidas = complaints.filter((c) => c.status === "Resolvido").length;
+  const unreadNotifications = notifications.filter((notification) => !notification.lida).length;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F4F6F9" }}>
@@ -312,6 +451,7 @@ export default function Dashboard() {
         open={menuOpen}
         activePage={activePage}
         onNavigate={handleNavigate}
+        unreadCount={unreadNotifications}
       />
 
       <div
@@ -322,7 +462,11 @@ export default function Dashboard() {
           // Use margin-left on larger screens if you want a persistent sidebar
         }}
       >
-        <Header onMenuClick={() => setMenuOpen((v) => !v)} />
+        <Header
+          onMenuClick={() => setMenuOpen((v) => !v)}
+          onNotificationsClick={() => handleNavigate("notifications")}
+          unreadCount={unreadNotifications}
+        />
 
         <main style={{ padding: 24, flex: 1 }}>
           {/* Page heading */}

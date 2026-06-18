@@ -1,4 +1,4 @@
-export default function Header({ onMenuClick }) {
+export default function Header({ onMenuClick, onNotificationsClick, unreadCount }) {
   return (
     <header
       style={{
@@ -49,11 +49,13 @@ export default function Header({ onMenuClick }) {
 
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <button
+          onClick={onNotificationsClick}
           style={{
             display: "flex", alignItems: "center", gap: 6,
             padding: "7px 14px", borderRadius: 7,
             border: "1px solid #E0E7EF", background: "white",
             color: "#445A72", fontSize: 13, fontWeight: 500, cursor: "pointer",
+            position: "relative",
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -61,12 +63,27 @@ export default function Header({ onMenuClick }) {
             <path d="M13.73 21a2 2 0 01-3.46 0" />
           </svg>
           Notificações
-          <span
-            style={{
-              width: 8, height: 8, background: "#E74C3C",
-              borderRadius: "50%", display: "inline-block",
-            }}
-          />
+          {unreadCount > 0 && (
+            <span
+              style={{
+                position: "absolute",
+                top: 4,
+                right: 4,
+                minWidth: 16,
+                height: 16,
+                lineHeight: "16px",
+                fontSize: 10,
+                fontWeight: 700,
+                background: "#E74C3C",
+                color: "white",
+                borderRadius: 8,
+                textAlign: "center",
+                padding: "0 4px",
+              }}
+            >
+              {unreadCount}
+            </span>
+          )}
         </button>
 
       </div>
