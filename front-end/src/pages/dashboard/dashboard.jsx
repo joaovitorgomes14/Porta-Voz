@@ -458,8 +458,7 @@ export default function Dashboard() {
         style={{
           flex: 1, display: "flex", flexDirection: "column",
           minWidth: 0,
-          // Push content right when sidebar is open on desktop
-          // Use margin-left on larger screens if you want a persistent sidebar
+  
         }}
       >
         <Header

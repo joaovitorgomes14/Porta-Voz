@@ -1,20 +1,31 @@
 import { useState } from "react";
+import { signupRequest } from "../api";
 
 function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    setError("");
+    setSuccess("");
     setIsLoading(true);
 
-    console.log("Nome:", name);
-    console.log("Email:", email);
-    console.log("Senha:", password);
-
-    // Aqui você pode chamar a API para criar a conta
+    try {
+      await signupRequest({ name, email, password });
+      setSuccess("Conta criada com sucesso. Faça login para continuar.");
+      setName("");
+      setEmail("");
+      setPassword("");
+    } catch (err) {
+      setError(err.message || "Erro ao criar a conta. Tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -22,6 +33,16 @@ function Signup() {
       
 
       <form action="#" onSubmit={handleSubmit} className="bg-white border border-slate-200 p-8 rounded-2xl shadow-sm w-full flex flex-col gap-5 max-w-md">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-lg" role="alert">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-2 rounded-lg" role="status">
+            {success}
+          </div>
+        )}
         <div className="text-center">
           <h1 className="text-xl font-semibold text-slate-800">Cadastre-se</h1>
           <p className="text-xs text-slate-500 mt-1">Crie sua conta para acessar o sistema</p>
@@ -72,7 +93,7 @@ function Signup() {
         </div>
 
         <button type="submit" disabled={isLoading} aria-busy={isLoading} className="bg-blue-700 text-white p-3 rounded-lg font-medium transition-all duration-200 hover:bg-blue-800 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-          Criar conta
+          {isLoading ? 'Criando conta...' : 'Criar conta'}
         </button>
       </form>
     </div>

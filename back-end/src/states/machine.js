@@ -149,13 +149,14 @@ async function handle({ user, state: currentState, message }) {
       }
 
       if (resposta === "sim") {
-        user = {};
-
         response = "Solicitação registrada com sucesso!";
         nextState = state.INICIO;
-
+        return {
+          nextState,
+          response,
+          shouldSaveComplaint: true
+        };
       } else {
-
         user.descricao = "";
         user.endereco = {};
         response = "Solicitação cancelada.";

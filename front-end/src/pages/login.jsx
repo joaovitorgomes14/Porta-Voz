@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { User, LogIn, ShieldCheck } from "lucide-react";
+import { loginRequest } from "../api";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -20,12 +21,10 @@ function Login() {
 
     setIsLoading(true);
     try {
-      // Substituir pela chamada real à API
-      await new Promise((res) => setTimeout(res, 1500));
-      console.log("Login realizado:", email);
+      await loginRequest({ email, password });
       navigate('/dashboard');
-    } catch {
-      setError("Credenciais inválidas. Tente novamente.");
+    } catch (err) {
+      setError(err.message || "Credenciais inválidas. Tente novamente.");
     } finally {
       setIsLoading(false);
     }

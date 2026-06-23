@@ -1,18 +1,36 @@
 import { useState } from "react";
+import { forgotPasswordRequest } from "../api";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    setError("");
+    setSuccess("");
 
-    console.log("Solicitar reset de senha para:", email);
-
-    // Aqui você pode chamar a API para enviar o email de recuperação
+    try {
+      await forgotPasswordRequest({ email });
+      setSuccess("Link de recuperação enviado. Verifique seu email.");
+    } catch (err) {
+      setError(err.message || "Erro ao enviar link de recuperação.");
+    }
   }
 
   return (
     <div className="h-screen flex justify-center items-center bg-linear-to-br from-slate-100 to-slate-200 px-4">
+      {error && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-lg" role="alert">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-2 rounded-lg" role="status">
+          {success}
+        </div>
+      )}
 
       <form action="#" onSubmit={handleSubmit}
       className="bg-white border border-slate-200 p-8 rounded-2xl shadow-sm w-full flex flex-col gap-5 max-w-md">
@@ -40,7 +58,7 @@ function ForgotPassword() {
           />
         </div>
 
-        <button type="submit" className="bg-blue-700 text-white p-3 rounded-lg font-medium transition-all duration-200 hover:bg-blue-800 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed">
+        <button type="submit" disabled={!email} className="bg-blue-700 text-white p-3 rounded-lg font-medium transition-all duration-200 hover:bg-blue-800 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed">
           Enviar link de recuperação
         </button>
       </form>
