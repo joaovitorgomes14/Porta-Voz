@@ -10,7 +10,7 @@ async function saveComplaint(usuarioId, complaint) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id
     `,
-    [usuarioId, descricao, endereco.rua, endereco.numero, endereco.bairro, status, prioridade, setor]
+    [usuarioId, descricao, endereco?.rua || null, endereco?.numero ?? null, endereco?.bairro || null, status, prioridade, setor]
   );
 
   return result.rows[0].id;
@@ -40,7 +40,34 @@ async function getAllComplaints() {
   return result.rows;
 }
 
+async function updateComplaint(id, updates) {
+  const allowedFields = ["status", "prioridade", "setor"];
+  const entries = Object.entries(updates).filter(([field]) => allowedFields.includes(field));
+
+  if (entries.length === 0) {
+    return false;
+  }
+
+  const setClause = entries.map(([field], index) => `${field} = $${index + 1}`).join(", ");
+  const values = entries.map(([, value]) => value);
+  values.push(id);
+
+  const result = await pool.query(
+    `UPDATE reclamacoes SET ${setClause} WHERE id = $${values.length} RETURNING id`,
+    values
+  );
+
+  return result.rowCount > 0;
+}
+
+async function deleteComplaint(id) {
+  const result = await pool.query("DELETE FROM reclamacoes WHERE id = $1 RETURNING id", [id]);
+  return result.rowCount > 0;
+}
+
 module.exports = {
   saveComplaint,
   getAllComplaints,
+  updateComplaint,
+  deleteComplaint,
 };

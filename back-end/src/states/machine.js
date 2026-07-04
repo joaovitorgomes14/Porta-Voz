@@ -5,7 +5,6 @@ const state = {
   INICIO: 'INICIO',
   DESCRICAO: 'DESCRICAO',
   RUA: 'RUA',
-  NUMERO: 'NUMERO',
   BAIRRO: 'BAIRRO',
   CONFIRMACAO: 'CONFIRMACAO',
 };
@@ -63,31 +62,9 @@ async function handle({ user, state: currentState, message }) {
         break;
       }
       user.endereco.rua = message.trim();
-      nextState = state.NUMERO;
-
-      response = "Informe o número do problema.";
-      break;
-
-    case state.NUMERO:
-      if (!message || !message.trim()) {
-        response = "Informe o número do problema.";
-        break;
-      }
-
-      const numero = message.trim();
-
-      if (Number.isNaN(Number(numero))) {
-        response = "Digite apenas números.";
-        break;
-      }
-
-
-      user.endereco.numero = Number(numero);
-
       nextState = state.BAIRRO;
 
       response = "Informe o bairro do problema.";
-
       break;
 
     case state.BAIRRO:
@@ -122,7 +99,6 @@ async function handle({ user, state: currentState, message }) {
     Problema: ${user.descricao}
 
     Rua: ${user.endereco.rua}
-    Número: ${user.endereco.numero}
     Bairro: ${user.endereco.bairro}
 
     Deseja confirmar? (sim/não)

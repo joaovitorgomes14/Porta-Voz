@@ -15,12 +15,26 @@ async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS usuarios (
       id SERIAL PRIMARY KEY,
       nome TEXT,
-      email TEXT UNIQUE,
+      email TEXT,
       password_hash TEXT,
-      external_id TEXT UNIQUE,
+      external_id TEXT,
       plataforma TEXT,
       criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER TABLE usuarios
+      ADD COLUMN IF NOT EXISTS nome TEXT,
+      ADD COLUMN IF NOT EXISTS email TEXT,
+      ADD COLUMN IF NOT EXISTS password_hash TEXT,
+      ADD COLUMN IF NOT EXISTS external_id TEXT,
+      ADD COLUMN IF NOT EXISTS plataforma TEXT,
+      ADD COLUMN IF NOT EXISTS criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+    ALTER TABLE usuarios ALTER COLUMN external_id DROP NOT NULL;
+    ALTER TABLE usuarios ALTER COLUMN plataforma DROP NOT NULL;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS usuarios_email_key ON usuarios (email) WHERE email IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS usuarios_external_id_key ON usuarios (external_id) WHERE external_id IS NOT NULL;
 
     CREATE TABLE IF NOT EXISTS sessoes (
       usuario_id INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,

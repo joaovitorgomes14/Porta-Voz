@@ -36,14 +36,14 @@ export default function Header({ onMenuClick, onNotificationsClick, unreadCount 
           <div style={{ fontSize: 15, fontWeight: 600, color: "#1A3A5C" }}>
             Dashboard de Reclamações
           </div>
-          <div style={{ fontSize: 12, color: "#7A8FA6", marginTop: 1 }}>
+          {/*<div style={{ fontSize: 12, color: "#7A8FA6", marginTop: 1 }}>
             Atualizado em{" "}
             {new Date().toLocaleDateString("pt-BR", {
               day: "numeric",
               month: "long",
               year: "numeric",
             })}
-          </div>
+          </div> */}
         </div>
       </div>
 

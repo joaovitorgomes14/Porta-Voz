@@ -21,6 +21,67 @@ function verifyPassword(password, storedHash) {
   return crypto.timingSafeEqual(Buffer.from(key, "hex"), Buffer.from(derivedKey, "hex"));
 }
 
+async function authenticate(email, password) {
+  if (!email || !password) {
+    throw new Error("Email e senha são obrigatórios.");
+  }
+
+  const result = await pool.query(
+    `SELECT id, nome, email, password_hash FROM usuarios WHERE email = $1`,
+    [email]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Credenciais inválidas.");
+  }
+
+  const user = result.rows[0];
+
+  if (!verifyPassword(password, user.password_hash)) {
+    throw new Error("Credenciais inválidas.");
+  }
+
+  return {
+    id: user.id,
+    name: user.nome,
+    email: user.email,
+  };
+}
+
+async function createUser({ name, email, password }) {
+  if (!name || !email || !password) {
+    throw new Error("Nome, email e senha são obrigatórios.");
+  }
+
+  const existingUser = await pool.query(
+    `SELECT id FROM usuarios WHERE email = $1`,
+    [email]
+  );
+
+  if (existingUser.rows.length > 0) {
+    throw new Error("Este e-mail já está cadastrado.");
+  }
+
+  const passwordHash = hashPassword(password);
+
+  const result = await pool.query(
+    `
+    INSERT INTO usuarios (nome, email, password_hash)
+    VALUES ($1, $2, $3)
+    RETURNING id, nome, email
+    `,
+    [name, email, passwordHash]
+  );
+
+  const createdUser = result.rows[0];
+
+  return {
+    id: createdUser.id,
+    name: createdUser.nome,
+    email: createdUser.email,
+  };
+}
+
 // pega ou cria usuário
 async function getOrCreateUser(externalId, plataforma = "telegram") {
   let result = await pool.query(
@@ -45,5 +106,7 @@ async function getOrCreateUser(externalId, plataforma = "telegram") {
 }
 
 module.exports = {
-  getOrCreateUser
+  authenticate,
+  createUser,
+  getOrCreateUser,
 };

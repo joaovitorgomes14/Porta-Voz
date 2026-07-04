@@ -40,3 +40,22 @@ export async function forgotPasswordRequest(payload) {
     body: payload,
   });
 }
+
+export async function getComplaintsRequest() {
+  return apiRequest('/complaints', {
+    method: 'GET',
+  });
+}
+
+export async function updateComplaintRequest(id, updates) {
+  return apiRequest(`/complaints/${id}`, {
+    method: 'PATCH',
+    body: updates,
+  });
+}
+
+export async function deleteComplaintRequest(id) {
+  return apiRequest(`/complaints/${id}`, {
+    method: 'DELETE',
+  });
+}

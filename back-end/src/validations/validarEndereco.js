@@ -13,13 +13,6 @@ function validarEndereco(endereco) {
   }
 
   if (
-    endereco.numero !== undefined &&
-    Number.isNaN(Number(endereco.numero))
-  ) {
-    erros.push("Número inválido.");
-  }
-
-  if (
     endereco.bairro !== undefined &&
     (
       typeof endereco.bairro !== "string" ||

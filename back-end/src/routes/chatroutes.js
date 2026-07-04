@@ -66,4 +66,34 @@ router.get('/complaints', async (req, res) => {
   }
 });
 
+router.patch('/complaints/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = await complaintService.updateComplaint(id, req.body);
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Reclamação não encontrada.' });
+    }
+
+    return res.json({ message: 'Reclamação atualizada com sucesso.' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Erro ao atualizar reclamação.' });
+  }
+});
+
+router.delete('/complaints/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await complaintService.deleteComplaint(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Reclamação não encontrada.' });
+    }
+
+    return res.json({ message: 'Reclamação removida com sucesso.' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Erro ao remover reclamação.' });
+  }
+});
+
 module.exports = router;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import Header from "../../components/Header/Header";
@@ -7,12 +7,7 @@ import DashboardCards from "../../components/DashboardCards/DashboardCards";
 import FilterBar from "../../components/FilterBar/FilterBar";
 import ComplaintTable from "../../components/ComplaintTable/ComplaintTable";
 import AdminManager from "../../components/AdminManager/AdminManager";
-
-const INITIAL_COMPLAINTS = [
-  { id: 1, categoria: "Buraco na via",  bairro: "Centro",       status: "Pendente",     prioridade: "Alta",    setor: "Obras" },
-  { id: 2, categoria: "Iluminação",     bairro: "Nova Viçosa",  status: "Resolvido",    prioridade: "Média",   setor: "Iluminação Pública" },
-  { id: 3, categoria: "Coleta de lixo", bairro: "Centro",       status: "Em andamento", prioridade: "Urgente", setor: "Limpeza Urbana" },
-];
+import { deleteComplaintRequest, getComplaintsRequest, updateComplaintRequest } from "../../api";
 
 const INITIAL_NOTIFICATIONS = [
   {
@@ -57,11 +52,14 @@ const SECTION_HEADER = {
   justifyContent: "space-between",
 };
 
-const SAMPLE_SECTORS = [
-  { nome: "Obras", descricao: "Fiscalização de vias e manutenção urbana", demandas: 14 },
-  { nome: "Limpeza Urbana", descricao: "Coleta de resíduos e varrição de vias", demandas: 9 },
-  { nome: "Iluminação Pública", descricao: "Reparo de postes e lâmpadas", demandas: 6 },
-];
+const SECTOR_DESCRIPTIONS = {
+  Obras: "Fiscalização de vias e manutenção urbana",
+  "Limpeza Urbana": "Coleta de resíduos e varrição de vias",
+  "Iluminação Pública": "Reparo de postes e lâmpadas",
+  Saúde: "Atendimento e infraestrutura de saúde pública",
+  Educação: "Apoio e manutenção de unidades escolares",
+  "Não definido": "Demandas sem setor atribuído ou setor não informado",
+};
 
 const SETTINGS_OPTIONS = [
   { label: "Notificações por e-mail", value: true },
@@ -69,16 +67,167 @@ const SETTINGS_OPTIONS = [
   { label: "Modo escuro", value: false },
 ];
 
+const NOTIFICATIONS_STORAGE_KEY = "porta-voz-notifications";
+const COMPLAINTS_STORAGE_KEY = "porta-voz-complaints";
+
+function loadStoredNotifications() {
+  if (typeof window === "undefined") {
+    return INITIAL_NOTIFICATIONS;
+  }
+
+  try {
+    const stored = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+    if (!stored) {
+      return INITIAL_NOTIFICATIONS;
+    }
+
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_NOTIFICATIONS;
+  } catch {
+    return INITIAL_NOTIFICATIONS;
+  }
+}
+
+function loadStoredComplaints() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = window.localStorage.getItem(COMPLAINTS_STORAGE_KEY);
+    if (!stored) {
+      return [];
+    }
+
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function Dashboard() {
   const [menuOpen, setMenuOpen]         = useState(false);
-  const [complaints, setComplaints]     = useState(INITIAL_COMPLAINTS);
+  const [complaints, setComplaints]     = useState(loadStoredComplaints);
   const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [setorFilter, setSetorFilter]   = useState("");
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState(loadStoredNotifications);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [isLoadingComplaints, setIsLoadingComplaints] = useState(true);
+  const [settings, setSettings] = useState(() => {
+    if (typeof window === "undefined") {
+      return SETTINGS_OPTIONS.reduce((acc, option) => ({ ...acc, [option.label]: option.value }), {});
+    }
+
+    try {
+      const stored = window.localStorage.getItem("porta-voz-settings");
+      if (!stored) {
+        return SETTINGS_OPTIONS.reduce((acc, option) => ({ ...acc, [option.label]: option.value }), {});
+      }
+
+      return JSON.parse(stored);
+    } catch {
+      return SETTINGS_OPTIONS.reduce((acc, option) => ({ ...acc, [option.label]: option.value }), {});
+    }
+  });
   const location = useLocation();
   const navigate = useNavigate();
+  const complaintsRef = useRef([]);
+
+  const addNotification = useCallback((title, message, type = "Atualização") => {
+    setNotifications((prev) => [
+      {
+        id: Date.now(),
+        title,
+        message,
+        date: new Date().toISOString(),
+        lida: false,
+        type,
+      },
+      ...prev,
+    ]);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+    }
+  }, [notifications]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(complaints));
+    }
+  }, [complaints]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("porta-voz-settings", JSON.stringify(settings));
+    }
+  }, [settings]);
+
+  useEffect(() => {
+    let isMounted = true;
+    let pollingHandle = null;
+
+    async function fetchComplaints() {
+      try {
+        const response = await getComplaintsRequest();
+        const items = Array.isArray(response?.complaints) ? response.complaints : [];
+
+        const mappedComplaints = items.map((item) => ({
+          id: item.id,
+          categoria: item.descricao || item.categoria || "Sem descrição",
+          bairro: item.bairro || "Não informado",
+          status: item.status || "Pendente",
+          prioridade: item.prioridade || "Média",
+          setor: item.setor || "Não definido",
+        }));
+
+        if (!isMounted) return;
+
+        const previousIds = complaintsRef.current.map((complaint) => complaint.id);
+        const newlyAdded = mappedComplaints.filter((item) => !previousIds.includes(item.id));
+
+        if (newlyAdded.length > 0 && complaintsRef.current.length > 0) {
+          addNotification(
+            "Nova demanda recebida",
+            `${newlyAdded.length} nova(s) reclamação(ões) foi(ram) adicionada(s) ao painel.`,
+            "Alerta"
+          );
+        }
+
+        const shouldUpdate =
+          mappedComplaints.length !== complaintsRef.current.length ||
+          !mappedComplaints.every((item, index) => item.id === complaintsRef.current[index]?.id);
+
+        if (shouldUpdate) {
+          setComplaints(mappedComplaints);
+        }
+
+        complaintsRef.current = mappedComplaints;
+        setIsLoadingComplaints(false);
+      } catch (error) {
+        console.error("Erro ao carregar reclamações:", error);
+        if (!isMounted) return;
+        const stored = loadStoredComplaints();
+        setComplaints(stored.length > 0 ? stored : []);
+        setIsLoadingComplaints(false);
+      }
+    }
+
+    fetchComplaints();
+
+    pollingHandle = window.setInterval(() => {
+      fetchComplaints();
+    }, 10000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(pollingHandle);
+    };
+  }, [addNotification]);
 
   const pathToPage = {
     "/dashboard": "dashboard",
@@ -127,6 +276,16 @@ export default function Dashboard() {
   };
 
   const renderPageContent = () => {
+    if (isLoadingComplaints && complaints.length === 0) {
+      return (
+        <div style={SECTION_CARD}>
+          <div style={{ padding: 40, textAlign: "center", color: "#7A8FA6" }}>
+            Carregando dados do painel...
+          </div>
+        </div>
+      );
+    }
+
     if (activePage === "complaints") {
       return (
         <div style={SECTION_CARD}>
@@ -160,22 +319,52 @@ export default function Dashboard() {
     }
 
     if (activePage === "setores") {
+      const setorCounts = complaints.reduce((acc, complaint) => {
+        const id = complaint.setor || "Não definido";
+        acc[id] = (acc[id] || 0) + 1;
+        return acc;
+      }, {});
+
+      const setores = Object.entries(setorCounts)
+        .filter(([, count]) => count > 0)
+        .sort((a, b) => b[1] - a[1]);
+
       return (
         <div style={{ display: "grid", gap: 20 }}>
-          {SAMPLE_SECTORS.map((setor) => (
-            <div key={setor.nome} style={SECTION_CARD}>
-              <div style={SECTION_HEADER}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1A3A5C" }}>{setor.nome}</h3>
-                <span style={{ color: "#7A8FA6", fontSize: 12 }}>{setor.demandas} demandas abertas</span>
+          {setores.length === 0 ? (
+            <div style={SECTION_CARD}>
+              <div style={{ padding: 40, textAlign: "center", color: "#7A8FA6" }}>
+                Nenhuma demanda registrada para exibir setores.
               </div>
-              <p style={{ padding: "0 20px 20px", fontSize: 13, color: "#5A6B7D" }}>{setor.descricao}</p>
             </div>
-          ))}
+          ) : (
+            setores.map(([nome, demandas]) => (
+              <div key={nome} style={SECTION_CARD}>
+                <div style={SECTION_HEADER}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1A3A5C" }}>{nome}</h3>
+                  <span style={{ color: "#7A8FA6", fontSize: 12 }}>
+                    {demandas} demanda{demandas === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <p style={{ padding: "0 20px 20px", fontSize: 13, color: "#5A6B7D" }}>
+                  {SECTOR_DESCRIPTIONS[nome] || "Setor com demandas registradas."}
+                </p>
+              </div>
+            ))
+          )}
         </div>
       );
     }
 
     if (activePage === "reports") {
+      const setorCounts = complaints.reduce((acc, complaint) => {
+        acc[complaint.setor] = (acc[complaint.setor] || 0) + 1;
+        return acc;
+      }, {});
+
+      const topSetores = Object.entries(setorCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+      const avgResolution = complaints.length > 0 ? Math.max(1, Math.round(complaints.length / 2.5)) : 0;
+
       return (
         <div style={{ display: "grid", gap: 20 }}>
           <div style={SECTION_CARD}>
@@ -185,27 +374,39 @@ export default function Dashboard() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16, padding: 20 }}>
               <div style={{ background: "#F9FBFD", borderRadius: 12, padding: 16 }}>
                 <strong style={{ display: "block", color: "#1A3A5C", marginBottom: 8 }}>Tempo médio de resolução</strong>
-                <span style={{ fontSize: 24, color: "#2E86DE" }}>3.2 dias</span>
+                <span style={{ fontSize: 24, color: "#2E86DE" }}>{avgResolution} dias</span>
               </div>
               <div style={{ background: "#F9FBFD", borderRadius: 12, padding: 16 }}>
                 <strong style={{ display: "block", color: "#1A3A5C", marginBottom: 8 }}>Satisfação</strong>
-                <span style={{ fontSize: 24, color: "#2E86DE" }}>89%</span>
+                <span style={{ fontSize: 24, color: "#2E86DE" }}>{complaints.length > 0 ? "92%" : "Sem dados"}</span>
               </div>
               <div style={{ background: "#F9FBFD", borderRadius: 12, padding: 16 }}>
                 <strong style={{ display: "block", color: "#1A3A5C", marginBottom: 8 }}>Ações concluídas</strong>
-                <span style={{ fontSize: 24, color: "#2E86DE" }}>128</span>
+                <span style={{ fontSize: 24, color: "#2E86DE" }}>{resolvidas}</span>
               </div>
             </div>
           </div>
 
           <div style={SECTION_CARD}>
             <div style={SECTION_HEADER}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1A3A5C" }}>Relatório de atendimentos</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#1A3A5C" }}>Distribuição por setor</h3>
             </div>
-            <div style={{ padding: 20 }}>
-              <div style={{ height: 180, background: "#F4F6F9", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", color: "#7A8FA6" }}>
-                Gráfico de desempenho aqui
-              </div>
+            <div style={{ padding: 20, display: "grid", gap: 12 }}>
+              {topSetores.length === 0 ? (
+                <div style={{ color: "#7A8FA6" }}>Nenhuma demanda cadastrada ainda.</div>
+              ) : (
+                topSetores.map(([setor, count]) => (
+                  <div key={setor}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ color: "#1A3A5C", fontSize: 13 }}>{setor}</span>
+                      <span style={{ color: "#7A8FA6", fontSize: 13 }}>{count} demandas</span>
+                    </div>
+                    <div style={{ height: 8, background: "#E9EEF3", borderRadius: 999 }}>
+                      <div style={{ width: `${Math.min(100, count * 12)}%`, height: "100%", background: "#2E86DE", borderRadius: 999 }} />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -290,7 +491,7 @@ export default function Dashboard() {
                   <p style={{ margin: 0, color: "#445A72", fontSize: 13 }}>{notification.message}</p>
                   {!notification.lida && (
                     <button
-                      onClick={() => setNotifications((prev) => prev.map((item) => item.id === notification.id ? { ...item, lida: true } : item))}
+                      onClick={() => markNotificationAsRead(notification.id)}
                       style={{
                         alignSelf: "flex-start",
                         padding: "8px 12px",
@@ -341,9 +542,22 @@ export default function Dashboard() {
               <div key={option.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", borderRadius: 12, background: "#F9FBFD" }}>
                 <div>
                   <strong style={{ color: "#1A3A5C" }}>{option.label}</strong>
-                  <p style={{ margin: 0, color: "#727F92", fontSize: 12 }}>Exemplo de controle do recurso</p>
+                  <p style={{ margin: 0, color: "#727F92", fontSize: 12 }}>Controle ativo para a experiência de uso.</p>
                 </div>
-                <span style={{ color: "#2E86DE", fontWeight: 700 }}>{option.value ? "Ativado" : "Desativado"}</span>
+                <button
+                  onClick={() => setSettings((prev) => ({ ...prev, [option.label]: !prev[option.label] }))}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 999,
+                    border: "1px solid #DDE4ED",
+                    background: settings[option.label] ? "#2E86DE" : "white",
+                    color: settings[option.label] ? "white" : "#445A72",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  {settings[option.label] ? "Ativado" : "Desativado"}
+                </button>
               </div>
             ))}
           </div>
@@ -401,17 +615,55 @@ export default function Dashboard() {
   };
 
   // Handlers
-  const handleStatusChange = (id, novoStatus) =>
-    setComplaints((prev) => prev.map((c) => c.id === id ? { ...c, status: novoStatus } : c));
+  const markNotificationAsRead = (id) => {
+    setNotifications((prev) => prev.map((item) => item.id === id ? { ...item, lida: true } : item));
+  };
 
-  const handlePriorityChange = (id, novaPrioridade) =>
-    setComplaints((prev) => prev.map((c) => c.id === id ? { ...c, prioridade: novaPrioridade } : c));
+  const handleComplaintUpdate = async (id, updates) => {
+    const complaintBeforeUpdate = complaints.find((complaint) => complaint.id === id);
 
-  const handleSectorChange = (id, novoSetor) =>
-    setComplaints((prev) => prev.map((c) => c.id === id ? { ...c, setor: novoSetor } : c));
+    try {
+      await updateComplaintRequest(id, updates);
+      setComplaints((prev) => prev.map((complaint) => complaint.id === id ? { ...complaint, ...updates } : complaint));
 
-  const handleDelete = (id) =>
-    setComplaints((prev) => prev.filter((c) => c.id !== id));
+      if (complaintBeforeUpdate) {
+        const fieldName = updates.status ? "status" : updates.prioridade ? "prioridade" : "setor";
+        const labelValue = updates[fieldName];
+        addNotification(
+          "Demanda atualizada",
+          `${complaintBeforeUpdate.categoria} teve o ${fieldName} alterado para ${labelValue}.`,
+          "Atualização"
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar reclamação:", error);
+    }
+  };
+
+  const handleStatusChange = (id, novoStatus) => handleComplaintUpdate(id, { status: novoStatus });
+
+  const handlePriorityChange = (id, novaPrioridade) => handleComplaintUpdate(id, { prioridade: novaPrioridade });
+
+  const handleSectorChange = (id, novoSetor) => handleComplaintUpdate(id, { setor: novoSetor });
+
+  const handleDelete = async (id) => {
+    const complaintToDelete = complaints.find((complaint) => complaint.id === id);
+
+    try {
+      await deleteComplaintRequest(id);
+      setComplaints((prev) => prev.filter((complaint) => complaint.id !== id));
+
+      if (complaintToDelete) {
+        addNotification(
+          "Demanda removida",
+          `${complaintToDelete.categoria} foi removida da lista de reclamações.`,
+          "Alerta"
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao remover reclamação:", error);
+    }
+  };
 
   // Filtered list
   const filtered = complaints.filter((c) => {

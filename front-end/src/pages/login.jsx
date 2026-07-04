@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { User, LogIn, ShieldCheck } from "lucide-react";
 import { loginRequest } from "../api";
 
-function Login() {
+function Login({ onAuthChange }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +22,10 @@ function Login() {
     setIsLoading(true);
     try {
       await loginRequest({ email, password });
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("porta-voz-auth", "true");
+      }
+      onAuthChange?.(true);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || "Credenciais inválidas. Tente novamente.");

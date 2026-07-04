@@ -14,6 +14,9 @@ function ForgotPassword() {
     try {
       await forgotPasswordRequest({ email });
       setSuccess("Link de recuperação enviado. Verifique seu email.");
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("porta-voz-auth");
+      }
     } catch (err) {
       setError(err.message || "Erro ao enviar link de recuperação.");
     }

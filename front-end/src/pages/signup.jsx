@@ -18,6 +18,9 @@ function Signup() {
     try {
       await signupRequest({ name, email, password });
       setSuccess("Conta criada com sucesso. Faça login para continuar.");
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("porta-voz-auth");
+      }
       setName("");
       setEmail("");
       setPassword("");

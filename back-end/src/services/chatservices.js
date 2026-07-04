@@ -1,6 +1,7 @@
 const stateMachine = require("../states/machine");
 const stateStore = require("../states/statestore");
 const userService = require("../services/userservice");
+const complaintService = require("../services/complaintService");
 
 
 async function processarMensagem(externalId, text) {
@@ -19,22 +20,25 @@ async function processarMensagem(externalId, text) {
   
 
 
-  // processa mensagem
-  const { nextState, response } = await stateMachine.handle({
+  const { nextState, response, shouldSaveComplaint } = await stateMachine.handle({
     user,
     userId,
     state: currentState,
     message: text
   });
 
-
-  // salva estado
   await stateStore.setState(userId, nextState);
-
-
-  // salva dados do usuário
   await stateStore.setUserData(userId, user);
 
+  if (shouldSaveComplaint) {
+    await complaintService.saveComplaint(userId, {
+      descricao: user.descricao,
+      endereco: user.endereco,
+      status: "Pendente",
+      prioridade: "Média",
+      setor: "Não definido",
+    });
+  }
 
   return response;
 }
